@@ -27,6 +27,8 @@ dist/
 build/
 .next/
 website/.next/
+website/out/
+.herenow/
 
 # Test
 coverage/
