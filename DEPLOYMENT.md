@@ -19,9 +19,11 @@ The gateway serves the live chat + all API endpoints.
 ## Option 2: Website on Vercel (free, recommended)
 
 1. Go to [vercel.com](https://vercel.com) > New Project > Import GitHub
-2. Root directory: `website`
-3. Framework: Next.js (auto-detected)
-4. Deploy. Website at `https://your-app.vercel.app`
+2. Keep the root directory set to the repository root (`.`). The website build reads connector and channel documentation from other repository folders.
+3. The committed `vercel.json` installs and builds the Next.js website, then publishes the static export from `website/out`.
+4. Deploy. Website at `https://your-app.vercel.app`.
+
+From the command line, run `vercel --prod` from the repository root, not from `website/`.
 
 The website reads from repo markdown files at build time — no backend needed.
 
