@@ -2,6 +2,10 @@
 
 > Connect your work tools to every AI workspace, safely.
 
+**Live Website:** [https://mcpoppins-public-ui.vercel.app](https://mcpoppins-public-ui.vercel.app)
+
+**Repo:** [https://github.com/aryan4avj/Project](https://github.com/aryan4avj/Project)
+
 MCPoppins is an AI agent platform that connects Jira and Confluence to any channel — IDEs, web chat, Microsoft Teams, and Slack — through a governed MCP gateway with LLM-powered intent resolution, cross-system workflows, conversation memory, and a full audit trail.
 
 **Live demo:** Start the gateway and open `http://localhost:3000/chat.html`
