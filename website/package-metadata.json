@@ -47,7 +47,7 @@
       "name": "@mcp-platform/confluence",
       "displayName": "Confluence MCP Connector",
       "version": "1.0.0",
-      "description": "Read pages, search content, browse attachments, view labels and version history with 14 tools and approval controls.",
+      "description": "Read pages, search content, browse attachments, view labels and version history with 13 tools and approval controls.",
       "vendor": "Atlassian Confluence",
       "supportedEditions": ["Confluence Cloud", "Confluence Data Center"],
       "runtime": "Node.js 18+",
@@ -89,7 +89,7 @@
     "trustStrip": ["Read-only by default", "Per-user identity", "Action approvals", "Auditable"],
     "primaryCTA": "Explore Connectors",
     "secondaryCTA": "Try the Playground",
-    "totalTools": 31,
+    "totalTools": 30,
     "totalConnectors": 2,
     "supportedPlatforms": ["Kiro IDE", "VS Code", "GitLab Duo", "Claude Desktop", "Cursor", "Windsurf"],
     "plannedPlatforms": ["Website Chat", "Microsoft Teams", "Slack", "WhatsApp", "Discord", "Telegram"]
