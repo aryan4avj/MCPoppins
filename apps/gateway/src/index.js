@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
 import { randomUUID } from "node:crypto";
+import { fileURLToPath } from "node:url";
+import { publicAccess } from "./public-access.js";
 import { createJiraTools } from "./connectors/jira.js";
 import { createConfluenceTools } from "./connectors/confluence.js";
 
@@ -11,6 +13,14 @@ import { createConfluenceTools } from "./connectors/confluence.js";
 const PORT = process.env.PORT || 3000;
 const SECRET = process.env.GATEWAY_SECRET || "";
 const OPENAI_KEY = process.env.OPENAI_API_KEY || "";
+const PUBLIC_ACCESS = process.env.PUBLIC_ACCESS === "true";
+if (PUBLIC_ACCESS && (process.env.JIRA_PAT || process.env.CONFLUENCE_PAT) && process.env.PUBLIC_DATA_CONFIRMED !== "true") {
+  throw new Error("Public connectors require PUBLIC_DATA_CONFIRMED=true and a workspace approved for public viewing.");
+}
+if (PUBLIC_ACCESS) {
+  process.env.JIRA_ENABLE_WRITES = "false";
+  process.env.CONFLUENCE_ENABLE_WRITES = "false";
+}
 
 // ---------------------------------------------------------------------------
 // LLM Intent Resolution (OpenAI) — falls back to keyword matching
@@ -24,6 +34,7 @@ async function llmResolveIntent(message, conversationContext) {
   try {
     const resp = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
+      signal: AbortSignal.timeout(20000),
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${OPENAI_KEY}` },
       body: JSON.stringify({
         model: "gpt-4o-mini",
@@ -75,9 +86,12 @@ Return ONLY valid JSON. No explanation.` },
 }
 
 const app = express();
-app.use(cors());
+app.disable("x-powered-by");
+if (!PUBLIC_ACCESS) app.use(cors());
 app.use(express.json({ limit: "1mb" }));
-app.use(express.static("public"));
+if (PUBLIC_ACCESS) app.use(publicAccess(SECRET));
+app.use(express.static(fileURLToPath(new URL("../public/", import.meta.url))));
+app.use(express.static(fileURLToPath(new URL("../../../website/out/", import.meta.url))));
 
 // ---------------------------------------------------------------------------
 // Tool Registry
@@ -326,7 +340,12 @@ function formatForChannel(reply, suggestions, channel) {
 // Auth
 // ---------------------------------------------------------------------------
 
-function authMw(req, res, next) { if (!SECRET) return next(); if (req.headers.authorization?.replace("Bearer ", "") !== SECRET) return res.status(401).json({ error: "Unauthorized" }); next(); }
+function authMw(req, res, next) {
+  if (PUBLIC_ACCESS && ((req.method === "POST" && req.path === "/chat") || (req.method === "GET" && req.path === "/tools"))) return next();
+  if (!SECRET && !PUBLIC_ACCESS) return next();
+  if (!SECRET || req.headers.authorization !== `Bearer ${SECRET}`) return res.status(401).json({ error: "Unauthorized" });
+  next();
+}
 
 // ---------------------------------------------------------------------------
 // Routes
@@ -345,7 +364,10 @@ app.post("/tools/:name", authMw, async (req, res) => {
 
 app.post("/chat", authMw, async (req, res) => {
   const { message, channel, userId } = req.body, id = randomUUID(), uid = userId || `anon-${channel || "api"}`, start = Date.now();
-  if (!message) return res.status(400).json({ error: "message required", id });
+  if (typeof message !== "string" || !message.trim() || message.length > 4000) return res.status(400).json({ error: "Enter a message between 1 and 4000 characters.", id });
+  if (!connectorStatus.jira && !connectorStatus.confluence && !/^(help|hello|hi)\b/i.test(message.trim())) {
+    return res.json({ id, reply: "The gateway is running, but Jira and Confluence are not connected yet. You can explore the website and interactive demo while the owner connects a workspace approved for public viewing.", toolsCalled: [], sources: [], suggestions: ["Help"], ms: Date.now() - start });
+  }
   addTurn(uid, "user", message);
   const r = { id, channel: channel || "api", userId: uid, message, toolsCalled: [], sources: [], reply: "", suggestions: [], ms: 0, intent: null };
   try {
