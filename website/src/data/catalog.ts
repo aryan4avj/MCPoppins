@@ -42,6 +42,7 @@ const accents = { jira: "#2457ff", confluence: "#6d4aff" } as const;
 const marks = { jira: "JI", confluence: "CO" } as const;
 
 export const platform = metadata.platform;
+export const gateway = (metadata as any).gateway || null;
 
 export const packages: ConnectorPackage[] = (metadata.packages as SourcePackage[]).map((item) => {
   const slug = item.name.includes("jira") ? "jira" : "confluence";
@@ -73,27 +74,50 @@ export const packages: ConnectorPackage[] = (metadata.packages as SourcePackage[
 
 export const workflows = [
   {
-    id: "thread-to-work",
+    id: "project-status",
     number: "01",
-    title: "Thread → governed work",
-    summary: "Read channel context, find related Jira and Confluence work, then show an exact write preview.",
-    steps: ["Read invoked thread", "Find related work", "Cite the decision", "Draft Jira action", "Ask for approval"]
-  },
-  {
-    id: "ambient-status",
-    number: "02",
-    title: "Ambient project status",
-    summary: "Answer inside Slack, Teams or Web Chat through the existing gateway and the same permission boundary.",
-    steps: ["Map channel identity", "Read allowed sources", "Resolve conflicts", "Return compact status", "Attach trace"]
+    title: "Cross-system project status",
+    summary: "Chains Jira issues and Confluence documentation into one combined status view with source attribution.",
+    steps: ["Fetch open Jira issues", "Search Confluence for related docs", "Combine with sources", "Suggest next actions", "Attach audit trace"],
+    gateway: true,
+    trigger: '"project status", "blockers", "standup"'
   },
   {
     id: "knowledge-to-action",
-    number: "03",
+    number: "02",
     title: "Knowledge → action",
     summary: "Connect a Confluence decision to Jira delivery state and prepare a controlled action.",
-    steps: ["Search decision", "Inspect linked issues", "Explain blocker", "Prepare comment", "Request approval"]
+    steps: ["Search Confluence decisions", "Find related Jira work", "Link decision to delivery", "Prepare comment", "Request approval"],
+    gateway: true,
+    trigger: '"decision", "link decision"'
+  },
+  {
+    id: "deep-dive",
+    number: "03",
+    title: "Deep dive investigation",
+    summary: "Full analysis of an issue: details, linked issues, comments, and related Confluence pages in one view.",
+    steps: ["Fetch issue with links and comments", "Search Confluence for mentions", "Combine across systems", "Show source count", "Suggest follow-ups"],
+    gateway: true,
+    trigger: '"investigate NAS-123", "deep dive", "everything about"'
+  },
+  {
+    id: "context-followup",
+    number: "04",
+    title: "Conversation memory",
+    summary: "Say 'tell me more' and the gateway remembers the last issue from your conversation history.",
+    steps: ["Scan conversation turns", "Extract last issue key", "Fetch fresh details", "Suggest Confluence search", "Continue context chain"],
+    gateway: true,
+    trigger: '"tell me more", "expand on that"'
   }
 ];
+
+export const gatewayFeatures = gateway ? {
+  tools: gateway.tools,
+  intents: gateway.intents,
+  workflows: gateway.workflows,
+  features: gateway.features,
+  endpoints: gateway.endpoints,
+} : null;
 
 export function getPackage(slug: string) {
   return packages.find((item) => item.slug === slug);

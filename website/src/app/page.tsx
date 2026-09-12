@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AgentDemo } from "@/components/AgentDemo";
-import { platform } from "@/data/catalog";
+import { platform, gateway } from "@/data/catalog";
 
 export default function Home() {
   return (
@@ -18,7 +18,17 @@ export default function Home() {
         <AgentDemo />
       </section>
 
-      <section className="channel-strip"><div className="shell channel-strip-inner"><span>Available connectors</span><strong>Jira · 17 tools</strong><strong>Confluence · 13 tools</strong><strong>Read-only by default</strong></div></section>
+      <section className="channel-strip"><div className="shell channel-strip-inner"><span>Available connectors</span><strong>Jira · 17 tools</strong><strong>Confluence · 13 tools</strong><strong>Gateway · {gateway?.tools || 20} HTTP tools</strong><strong>Read-only by default</strong></div></section>
+
+      {gateway && (
+        <section className="section shell">
+          <div className="section-heading"><span className="eyebrow">Intelligent gateway</span><h2>{gateway.intents} intent patterns. {gateway.workflows.length} cross-system workflows.</h2><p>The gateway chains Jira and Confluence tools, remembers conversation context, and formats responses for each channel.</p></div>
+          <div className="platform-grid">
+            <article><span>Capabilities</span>{gateway.features.map((f: string) => <strong key={f}>✓ {f}</strong>)}</article>
+            <article><span>API endpoints</span>{gateway.endpoints.map((e: string) => <strong key={e}>{e}</strong>)}</article>
+          </div>
+        </section>
+      )}
 
       <section className="section shell platforms-section">
         <div className="section-heading"><span className="eyebrow">Platforms</span><h2>Meet teams where they already work.</h2><p>Supported clients run the kits today. Planned channels use the existing gateway and adapter guides.</p></div>

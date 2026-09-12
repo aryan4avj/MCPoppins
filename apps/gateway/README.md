@@ -1,37 +1,38 @@
-# MCP Gateway
+# MCP Gateway v2
 
-> HTTP server that exposes Jira and Confluence MCP tools to web chat, Microsoft Teams, Slack and other channels.
+> Intelligent HTTP gateway with cross-system workflows, conversation memory, audit trail, and channel adapters.
+
+## Features
+- 22 intent patterns, 4 workflows, 20 tools (12 Jira + 8 Confluence)
+- Conversation memory (per-user, 10 turns, 30min TTL)
+- Audit trail with correlation IDs
+- Action approval flow (preview/confirm/reject)
+- Channel-aware formatting (Teams, Slack, web)
+- Proactive insights (high-priority and overdue detection)
+- Graceful degradation, suggested actions
 
 ## Quick Start
-
 ```bash
-cd apps/gateway
-npm install
-cp .env.example .env    # Add your Jira/Confluence credentials
-node src/index.js
+npm install && cp .env.example .env && node src/index.js
 ```
 
-## API Endpoints
-
+## Endpoints
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/health` | Health check |
-| GET | `/tools` | List all available tools |
-| POST | `/tools/:name` | Execute a tool by name |
-| POST | `/chat` | Natural language message routing |
-| POST | `/webhooks/teams` | Microsoft Teams webhook |
-| POST | `/webhooks/slack` | Slack Events API webhook |
+| GET | /health | Status, tools, memory, audit |
+| GET | /tools | List tools and workflows |
+| POST | /tools/:name | Execute tool |
+| POST | /chat | Intelligent chat |
+| GET | /audit | Audit trail |
+| GET | /conversation/:userId | Conversation history |
+| GET | /approvals | Pending approvals |
+| POST | /approvals/:id/confirm | Confirm write |
+| POST | /approvals/:id/reject | Reject write |
+| POST | /webhooks/teams | Teams webhook |
+| POST | /webhooks/slack | Slack webhook |
 
-## Test It
-
-```bash
-curl http://localhost:3000/health
-curl http://localhost:3000/tools
-curl -X POST http://localhost:3000/chat -H "Content-Type: application/json" -d "{\"message\": \"show my issues\"}"
-```
-
-## Channel Setup Guides
-
-- [Teams Setup](../../docs/channels/teams-setup.md)
-- [Slack Setup](../../docs/channels/slack-setup.md)
-- [Web Chat](../../docs/channels/web-chat-setup.md)
+## Workflows
+- **project_status** — Jira issues + Confluence pages combined
+- **knowledge_action** — Decisions + related work
+- **deep_dive** — Issue + related pages + comments
+- **context_followup** — Conversation memory resolution
