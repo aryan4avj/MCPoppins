@@ -1,0 +1,97 @@
+{
+  "packages": [
+    {
+      "name": "@mcp-platform/jira",
+      "displayName": "Jira MCP Connector",
+      "version": "1.0.0",
+      "description": "Search issues, view sprints, manage work items, and track projects with 17 tools and approval controls.",
+      "vendor": "Atlassian Jira",
+      "supportedEditions": ["Jira Cloud", "Jira Data Center", "Jira Server (v7+)"],
+      "runtime": "Node.js 18+",
+      "transports": ["stdio"],
+      "clients": ["Kiro IDE", "VS Code", "GitLab Duo", "Claude Desktop", "Cursor", "Windsurf"],
+      "os": ["Windows", "macOS", "Linux"],
+      "installMethods": ["npm", "ZIP", "Docker"],
+      "defaultMode": "read-only",
+      "readTools": [
+        {"name": "health_check", "description": "Validate connection"},
+        {"name": "get_issue", "description": "Get issue details by key"},
+        {"name": "search_issues", "description": "Search using JQL"},
+        {"name": "my_issues", "description": "Your open issues"},
+        {"name": "get_board_issues", "description": "Board/sprint issues"},
+        {"name": "get_sprint_issues", "description": "Agile API sprint view with goals and dates"},
+        {"name": "get_attachments", "description": "Issue attachments"},
+        {"name": "get_worklogs", "description": "Work logs with total hours"},
+        {"name": "get_comments", "description": "Issue comments"},
+        {"name": "get_links", "description": "Linked issues (blocks, duplicates, etc.)"},
+        {"name": "whoami", "description": "Current user info"}
+      ],
+      "writeTools": [
+        {"name": "create_issue", "description": "Create issue", "requiresApproval": true},
+        {"name": "update_issue", "description": "Update fields", "requiresApproval": true},
+        {"name": "transition_issue", "description": "Change status", "requiresApproval": true},
+        {"name": "add_comment", "description": "Add comment", "requiresApproval": true},
+        {"name": "assign_issue", "description": "Assign user", "requiresApproval": true},
+        {"name": "log_work", "description": "Log time", "requiresApproval": true}
+      ],
+      "security": ["Read-only default", "Project allowlist", "No TLS bypass", "Correlation IDs", "Timeouts"],
+      "prompts": [
+        "Show me my open Jira issues",
+        "Find high-priority bugs in PROJ",
+        "What's the status of PROJ-456?",
+        "Show the current sprint for PROJ",
+        "What are the attachments on PROJ-123?"
+      ]
+    },
+    {
+      "name": "@mcp-platform/confluence",
+      "displayName": "Confluence MCP Connector",
+      "version": "1.0.0",
+      "description": "Read pages, search content, browse attachments, view labels and version history with 14 tools and approval controls.",
+      "vendor": "Atlassian Confluence",
+      "supportedEditions": ["Confluence Cloud", "Confluence Data Center"],
+      "runtime": "Node.js 18+",
+      "transports": ["stdio"],
+      "clients": ["Kiro IDE", "VS Code", "GitLab Duo", "Claude Desktop", "Cursor", "Windsurf"],
+      "os": ["Windows", "macOS", "Linux"],
+      "installMethods": ["npm", "ZIP", "Docker"],
+      "defaultMode": "read-only",
+      "readTools": [
+        {"name": "health_check", "description": "Validate connection"},
+        {"name": "get_page", "description": "Get page by ID"},
+        {"name": "get_page_by_title", "description": "Find page by title"},
+        {"name": "search_pages", "description": "CQL search"},
+        {"name": "search_pages_advanced", "description": "Paginated search with offsets"},
+        {"name": "list_child_pages", "description": "Navigate page tree"},
+        {"name": "get_page_raw", "description": "Raw XHTML storage"},
+        {"name": "get_page_metadata", "description": "Structured JSON metadata with labels"},
+        {"name": "get_attachments", "description": "Page attachments"},
+        {"name": "get_labels", "description": "Page labels"},
+        {"name": "get_page_history", "description": "Version history"}
+      ],
+      "writeTools": [
+        {"name": "create_page", "description": "Create page", "requiresApproval": true},
+        {"name": "update_page", "description": "Update with version conflict handling", "requiresApproval": true}
+      ],
+      "security": ["Read-only default", "Safe CQL escaping", "No TLS bypass", "Correlation IDs", "Timeouts"],
+      "prompts": [
+        "Find the page about deployment",
+        "Show child pages of architecture docs",
+        "What labels are on page 12345?",
+        "Show version history of our design doc",
+        "List attachments on the API spec page"
+      ]
+    }
+  ],
+  "platform": {
+    "headline": "Connect your work tools to every AI workspace, safely.",
+    "subhead": "Install trusted MCP kits for Jira and Confluence, run them locally or through a governed gateway.",
+    "trustStrip": ["Read-only by default", "Per-user identity", "Action approvals", "Auditable"],
+    "primaryCTA": "Explore Connectors",
+    "secondaryCTA": "Try the Playground",
+    "totalTools": 31,
+    "totalConnectors": 2,
+    "supportedPlatforms": ["Kiro IDE", "VS Code", "GitLab Duo", "Claude Desktop", "Cursor", "Windsurf"],
+    "plannedPlatforms": ["Website Chat", "Microsoft Teams", "Slack", "WhatsApp", "Discord", "Telegram"]
+  }
+}
