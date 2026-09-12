@@ -1,5 +1,44 @@
 # Deployment Guide
 
+## Public website and gateway together on Render
+
+Use the repository's `render.yaml` Blueprint. It builds the full website from the
+repository root and serves it alongside the gateway on one public address.
+
+- Website: `/`
+- Live chat: `/chat.html` (also linked from the website header)
+- Connection status: `/health`
+
+The Blueprint selects Render's free plan. It sleeps after 15 minutes without
+traffic, and the next visit can take about a minute to wake it. Choose a paid
+instance in Render if continuous availability is needed. No paid plan is required
+by this configuration.
+
+Public mode gives browsers separate signed chat sessions, limits chat requests,
+and keeps audit, conversation, approval, direct tool execution, and webhook
+endpoints behind the generated administrator secret. Connector writes are forced
+off. Sessions, audit records, approvals, and limits are held in memory and reset
+on restarts; use a single instance for this hackathon deployment.
+
+Without connector credentials, the website and gateway run but live Jira and
+Confluence queries are unavailable. The chat states this explicitly; the website's
+interactive demo continues to use sample data.
+
+To enable live queries, configure a **dedicated workspace approved for public
+viewing** using the Jira/Confluence variables below and set
+`PUBLIC_DATA_CONFIRMED=true`. Every public visitor can query anything those
+credentials can read. Do not connect a private company workspace. Visitors cannot
+yet connect separate personal accounts. Set `OPENAI_API_KEY` only if optional AI
+intent routing is wanted; otherwise the existing keyword router is used.
+
+Rate limits are deliberately conservative: 60 total chat requests per minute and
+20 per socket address. Behind a hosting proxy, multiple visitors can share that
+lower limit. This limits basic usage but is not a substitute for a provider budget.
+
+The standalone MCP packages remain available for local IDE clients; they use
+standard input/output and are not hosted remote MCP endpoints. Teams and Slack
+also require their own account setup and are not enabled by public web access.
+
 ## Option 1: Gateway on Render.com (free, recommended)
 
 The gateway serves the live chat + all API endpoints.

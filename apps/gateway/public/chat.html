@@ -49,26 +49,31 @@ body{font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif;backgrou
 </head>
 <body>
 <div class="hdr"><div class="logo">MP</div><h1>MCPoppins <span>Agent Chat</span></h1><div class="badge off" id="st">Connecting...</div></div>
-<div class="msgs" id="msgs"><div class="welcome"><h2>Connect. Ask. <em>Act safely.</em></h2><p>Talk to your Jira and Confluence through a governed AI gateway.</p><div class="chips"><span>GPT-4o powered</span><span>Read-only default</span><span>Audit trail</span><span>Cross-system workflows</span></div></div></div>
+<div class="msgs" id="msgs"><div class="welcome"><h2>Connect. Ask. <em>Act safely.</em></h2><p>Talk to your Jira and Confluence through a governed AI gateway.</p><div class="chips"><span>AI routing optional</span><span>Read-only default</span><span>Audit trail</span><span>Cross-system workflows</span></div></div></div>
 <div class="sug" id="sug"><button onclick="go('show my issues')">My issues</button><button onclick="go('project status')">Project status</button><button onclick="go('high priority issues')">Critical issues</button><button onclick="go('search confluence for architecture')">Search docs</button><button onclick="go('help')">Help</button></div>
 <div class="bar"><input id="inp" placeholder="Ask anything about your Jira or Confluence..." autocomplete="off"><button id="btn" onclick="go()">Send</button></div>
-<div class="foot"><a href="/health" target="_blank">Health</a><a href="/tools" target="_blank">Tools</a><a href="/audit?limit=20" target="_blank">Audit Trail</a></div>
+<div class="foot"><a href="/health" target="_blank">Health</a><a href="/tools" target="_blank">Tools</a><a href="/">Website</a></div>
 <script>
-const G=location.origin,uid="demo-"+Math.random().toString(36).slice(2,8);
-const ms=document.getElementById("msgs"),inp=document.getElementById("inp"),sg=document.getElementById("sug"),st=document.getElementById("st"),btn=document.getElementById("btn");
-fetch(G+"/health").then(r=>r.json()).then(d=>{const p=[];if(d.connectors?.jira)p.push("Jira");if(d.connectors?.confluence)p.push("Confluence");st.textContent=`${d.tools} tools · ${p.join(" + ")} · v${d.version}`;st.className="badge ok"}).catch(()=>{st.textContent="Offline";st.className="badge off"});
+const G=location.origin,uid="demo-"+Math.random().toString(36).slice(2,8),ms=document.getElementById("msgs"),inp=document.getElementById("inp"),sg=document.getElementById("sug"),st=document.getElementById("st"),btn=document.getElementById("btn");
+fetch(G+"/health").then(r=>r.json()).then(d=>{st.textContent=d.tools?d.tools+" tools · "+(d.connectors?.jira?"Jira":"")+(d.connectors?.confluence?" + Confluence":""):"Online · Connectors not configured";st.className="badge ok"}).catch(()=>{st.textContent="Offline";st.className="badge off"});
 inp.onkeypress=e=>{if(e.key==="Enter"&&!btn.disabled)go()};
-async function go(t){const m=t||inp.value.trim();if(!m)return;inp.value="";sg.innerHTML="";addUser(m);const ty=addTyping();btn.disabled=true;
-try{const r=await(await fetch(G+"/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:m,channel:"web",userId:uid})})).json();ty.remove();
-let rp=r.reply||r.error||"No response.";
-rp=rp.replace(/^# (.+)$/gm,'<strong style="font-size:15px;color:#e2e2ef">$1</strong>').replace(/^## (.+)$/gm,'<strong style="font-size:13.5px;color:#a0a0ff">$1</strong>').replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/^- (.+)$/gm,'<span style="color:#8888aa">&#8226;</span> $1').replace(/(NAS-\d+|[A-Z]+-\d+)/g,'<strong style="color:#fbbf24">$1</strong>');
-let mt='<div class="meta">';if(r.intent)mt+=`<span>${r.intent}</span>`;if(r.toolsCalled?.length)mt+=`<span>${r.toolsCalled.join(", ")}</span>`;if(r.ms)mt+=`<span class="tm">${r.ms}ms</span>`;if(r.sources?.length){const ok=r.sources.filter(s=>s.status==="ok").map(s=>s.system);if(ok.length)mt+=`<span class="src">${ok.join(" + ")}</span>`}mt+=`<span>${r.id?.slice(0,8)}</span></div>`;
-const d=document.createElement("div");d.className="m b";d.innerHTML=`<div class="label"><span class="dot"></span>MCPoppins</div><div class="body">${rp}</div>${mt}`;ms.appendChild(d);
-if(r.suggestions?.length)sg.innerHTML=r.suggestions.map(s=>`<button onclick="go('${s.replace(/'/g,"\\'")}')">${s}</button>`).join("")}catch(e){ty.remove();addBot("Error: "+e.message)}
-btn.disabled=false;ms.scrollTop=ms.scrollHeight;inp.focus()}
-function addUser(t){const d=document.createElement("div");d.className="m u";d.textContent=t;ms.appendChild(d);ms.scrollTop=ms.scrollHeight}
-function addBot(t){const d=document.createElement("div");d.className="m b";d.innerHTML=`<div class="label"><span class="dot"></span>MCPoppins</div><div class="body">${t}</div>`;ms.appendChild(d);ms.scrollTop=ms.scrollHeight}
-function addTyping(){const d=document.createElement("div");d.className="typ";d.innerHTML='<div class="dots"><i></i><i></i><i></i></div> Thinking...';ms.appendChild(d);ms.scrollTop=ms.scrollHeight;return d}
+async function go(t){
+  const m=t||inp.value.trim();if(!m||btn.disabled)return;
+  inp.value="";sg.replaceChildren();add(m,"u");const ty=add("Thinking...","typ");btn.disabled=true;
+  try{
+    const response=await fetch(G+"/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:m,channel:"web",userId:uid}),signal:AbortSignal.timeout(60000)});
+    const r=await response.json();ty.remove();
+    const d=add(r.reply||r.error||"No response.","b");
+    const meta=document.createElement("div");meta.className="meta";
+    for(const value of [r.intent,r.toolsCalled?.join(", "),r.ms?`${r.ms}ms`:null,r.id?.slice(0,8)]){
+      if(!value)continue;const span=document.createElement("span");span.textContent=value;meta.appendChild(span);
+    }
+    d.appendChild(meta);
+    for(const suggestion of r.suggestions||[]){const button=document.createElement("button");button.textContent=suggestion;button.onclick=()=>go(suggestion);sg.appendChild(button);}
+  }catch(e){ty.remove();add("Error: "+e.message,"b");}
+  btn.disabled=false;ms.scrollTop=ms.scrollHeight;inp.focus();
+}
+function add(t,c){const d=document.createElement("div");d.className="m "+c;d.textContent=t;d.style.whiteSpace="pre-wrap";ms.appendChild(d);ms.scrollTop=ms.scrollHeight;return d}
 </script>
 </body>
 </html>

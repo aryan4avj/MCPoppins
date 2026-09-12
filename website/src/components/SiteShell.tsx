@@ -16,7 +16,7 @@ export function SiteHeader() {
       <div className="shell header-inner">
         <Link href="/" className="brand-link"><BrandMark /></Link>
         <nav className="desktop-nav" aria-label="Primary navigation"><Link href="/marketplace">Marketplace</Link><Link href="/channels/teams">Channels</Link><Link href="/trust">Trust</Link><Link href="/docs">Docs</Link><Link href="/pricing">Pricing</Link></nav>
-        <Link href="/marketplace" className="button button-small button-dark">Explore <span>↗</span></Link>
+        <a href="/chat.html" className="button button-small button-dark">Live chat <span>↗</span></a>
       </div>
     </header>
   );
@@ -28,7 +28,7 @@ export function SiteFooter() {
       <div className="shell footer-minimal">
         <BrandMark />
         <span>Trusted MCP kits for AI workspaces and communication channels.</span>
-        <small>Static prototype · No credentials or external actions</small>
+        <small>Interactive demos use sample data · Live chat reports connection status</small>
       </div>
     </footer>
   );
