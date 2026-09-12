@@ -85,7 +85,7 @@
     "trustStrip": ["Read-only by default", "Per-user identity", "Action approvals", "Auditable"],
     "primaryCTA": "Explore Connectors",
     "secondaryCTA": "Try the Playground",
-    "totalTools": 33,
+    "totalTools": 30,
     "totalConnectors": 2,
     "supportedPlatforms": ["Kiro IDE", "VS Code", "GitLab Duo", "Claude Desktop", "Cursor", "Windsurf"],
     "plannedPlatforms": ["Website Chat", "Microsoft Teams", "Slack", "WhatsApp", "Discord", "Telegram"]
