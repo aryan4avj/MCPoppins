@@ -34,7 +34,7 @@ const checks = [
   [home, "Meet MCPoppins"],
   [home, "platform.subhead"],
   [home, "platform.supportedPlatforms"],
-  [docs, "30-tool catalogue"],
+  [docs, "platform.totalTools"],
   [docs, "packages/mcp-jira/README.md"],
   [docs, "apps/gateway/README.md"],
   [pricing, "Pricing is not published"],
@@ -45,9 +45,11 @@ for (const [content, marker] of checks) {
   if (!content.includes(marker)) throw new Error(`Required marker missing: ${marker}`);
 }
 
-const toolCount = metadata.packages.reduce((sum, item) => sum + item.readTools.length + item.writeTools.length, 0);
+const packageToolCount = metadata.packages.reduce((sum, item) => sum + item.readTools.length + item.writeTools.length, 0);
 if (metadata.packages.length !== metadata.platform.totalConnectors) throw new Error("Connector total does not match package metadata.");
-if (toolCount !== metadata.platform.totalTools) throw new Error(`Tool total mismatch: expected ${metadata.platform.totalTools}, found ${toolCount}.`);
+if (packageToolCount !== metadata.platform.totalTools) throw new Error(`Tool total mismatch: expected ${metadata.platform.totalTools}, found ${packageToolCount}.`);
+if (!metadata.gateway || metadata.gateway.tools < 1) throw new Error("Gateway tool metadata is missing.");
+if (!Array.isArray(metadata.gateway.workflows) || metadata.gateway.workflows.length < 1) throw new Error("Gateway workflow metadata is missing.");
 if (metadata.packages.some((item) => item.defaultMode !== "read-only")) throw new Error("Every connector must remain read-only by default.");
 
 const openuiSource = await readFile(path.join(root, "src/lib/demoOpenUI.ts"), "utf8");
@@ -58,4 +60,4 @@ const parsed = parser.parse(responseMatch[1]);
 const parseErrors = parsed.meta?.errors ?? [];
 if (parseErrors.length > 0) throw new Error(`OpenUI Lang did not parse cleanly: ${JSON.stringify(parseErrors)}`);
 
-console.log(`Content contract passed: ${required.length} source-backed routes/files, ${toolCount} tools, ${checks.length} product markers, and the OpenUI Lang parse.`);
+console.log(`Content contract passed: ${required.length} source-backed routes/files, ${metadata.platform.totalTools} platform tools (${packageToolCount} package tools), ${metadata.gateway.workflows.length} gateway workflows, ${checks.length} product markers, and the OpenUI Lang parse.`);
