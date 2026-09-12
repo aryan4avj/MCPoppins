@@ -1,232 +1,96 @@
-# MCP Platform
+# MCPoppins — MCP Platform
 
 > Connect your work tools to every AI workspace, safely.
 
-A secure MCP connector marketplace and omnichannel agent gateway. Install trusted MCP kits for Jira and Confluence, run them locally or through a governed gateway, and use the same capabilities from your IDE, website and collaboration channels.
+MCPoppins is an AI agent platform that connects Jira and Confluence to any channel — IDEs, web chat, Microsoft Teams, and Slack — through a governed MCP gateway with LLM-powered intent resolution, cross-system workflows, conversation memory, and a full audit trail.
 
----
+**Live demo:** Start the gateway and open `http://localhost:3000/chat.html`
 
-## What's Inside
+## What It Does
 
-| Package | Tools | Description |
-|---------|-------|-------------|
-| [@mcp-platform/jira](./packages/mcp-jira/) | 17 | Jira Cloud & Data Center — issues, sprints, boards, comments, attachments, worklogs |
-| [@mcp-platform/confluence](./packages/mcp-confluence/) | 14 | Confluence Cloud & Data Center — pages, search, labels, attachments, version history |
+- **33 MCP tools** across Jira (17) and Confluence (13) connector packages + 20 gateway HTTP tools
+- **LLM-powered chat** — GPT-4o-mini understands natural language and picks the right tool
+- **Cross-system workflows** — "project status" chains Jira + Confluence into one view
+- **Conversation memory** — "tell me more" resolves from previous turns
+- **Audit trail** — every tool call logged with intent, timing, correlation IDs
+- **Channel adapters** — Teams, Slack, web chat with channel-aware formatting
+- **Read-only by default** — writes require explicit enablement and approval
+- **Any Jira/Confluence instance** — Cloud, Data Center, Server
 
-Both packages are **read-only by default**. Write operations require explicit enablement.
-
----
-
-## Quick Start — For Users
-
-### 1. Prerequisites
-- **Node.js 18+** — [download](https://nodejs.org/)
-- Access to a Jira or Confluence instance
-- API token (Cloud) or Personal Access Token (Data Center)
-
-### 2. Install
+## Quick Start
 
 ```bash
-git clone <repo-url>
-cd mcp-platform
-
-cd packages/mcp-jira
+git clone https://github.com/aryan4avj/Project.git
+cd Project/apps/gateway
 npm install
+# Set env vars: JIRA_BASE_URL, JIRA_PAT, CONFLUENCE_BASE_URL, CONFLUENCE_PAT
+# Optional: OPENAI_API_KEY (enables LLM)
+node src/index.js
+# Open http://localhost:3000/chat.html
 ```
 
-### 3. Configure
+## Architecture
 
-```bash
-cp .env.example .env
-# Edit .env with your instance URL and token
+```
+User (natural language)
+  |
+GPT-4o-mini intent resolution (optional)
+  |
+Gateway v2 (Express, 22 intents, 4 workflows)
+/chat  /tools  /audit  /approvals  /webhooks/*
+  |
+Jira MCP (17 tools) + Confluence MCP (13 tools)
+  |
+Jira API + Confluence API
 ```
 
-### 4. Verify
+## Project Structure
 
-```bash
-npm run doctor
+```
+apps/gateway/           # HTTP gateway + LLM + chat UI + webhooks
+  public/chat.html      # Live web chat
+  src/connectors/       # Jira + Confluence handlers
+packages/
+  mcp-jira/             # Jira stdio package (17 tools)
+  mcp-confluence/       # Confluence stdio package (13 tools)
+website/                # Next.js marketplace (MCPoppins)
+docs/channels/          # Teams, Slack, Web Chat guides
+DEPLOYMENT.md           # Hosting guide
 ```
 
-### 5. Connect to Your IDE
+## Gateway Features
 
-#### Kiro IDE
-Create `.kiro/settings/mcp.json`:
-```json
-{
-  "mcpServers": {
-    "jira": {
-      "command": "node",
-      "args": ["C:/path/to/mcp-platform/packages/mcp-jira/src/index.js"],
-      "env": {
-        "JIRA_BASE_URL": "https://your-domain.atlassian.net",
-        "JIRA_PAT": "YOUR_TOKEN_HERE",
-        "JIRA_EMAIL": "you@example.com"
-      }
-    },
-    "confluence": {
-      "command": "node",
-      "args": ["C:/path/to/mcp-platform/packages/mcp-confluence/src/index.js"],
-      "env": {
-        "CONFLUENCE_BASE_URL": "https://your-domain.atlassian.net/wiki",
-        "CONFLUENCE_PAT": "YOUR_TOKEN_HERE",
-        "CONFLUENCE_EMAIL": "you@example.com"
-      }
-    }
-  }
-}
-```
+| Feature | Description |
+|---------|-------------|
+| LLM intent | GPT-4o-mini with keyword fallback |
+| Workflows | project_status, knowledge_action, deep_dive, context_followup |
+| Memory | Per-user, 10 turns, 30min TTL |
+| Audit | Correlation IDs, timing, intent logging |
+| Approvals | Write preview/confirm/reject |
+| Channels | Teams, Slack, web formatting |
+| Insights | High-priority and overdue detection |
 
-#### VS Code / Claude Desktop / GitLab Duo
-Same JSON format in your IDE's MCP config location.
+## Platforms
 
-### 6. Start Using
-- "Show me my open Jira issues"
-- "What's the status of PROJ-123?"
-- "Find the Confluence page about deployment"
-- "Show the sprint board for project PROJ"
+**Works today:** Kiro, VS Code, GitLab Duo, Claude Desktop, Cursor, Windsurf, Web Chat
 
----
-
-## Quick Start — For Team Members (Website / FE)
-
-Your work is independent of the backend packages:
-
-1. **Read the handbook** — Sections 3, 8, 9, 14, 19
-2. **Use `website/package-metadata.json`** for structured package data
-3. **Build with static/placeholder data** — don't wait for backend APIs
-4. **Pages to build:** Home, Marketplace, Package Detail, Docs, Trust Centre, Pricing
-
-Homepage headline: **"Connect your work tools to every AI workspace, safely."**
-
----
-
-## Tools
-
-### Jira (17)
-
-| Tool | Description | Mode |
-|------|-------------|------|
-| health_check | Validate connection | Read |
-| get_issue | Issue details by key | Read |
-| search_issues | JQL search | Read |
-| my_issues | Your open issues | Read |
-| get_board_issues | Board issues | Read |
-| get_sprint_issues | Agile sprint view | Read |
-| get_attachments | Issue attachments | Read |
-| get_worklogs | Work logs | Read |
-| get_comments | Issue comments | Read |
-| get_links | Linked issues | Read |
-| whoami | Current user | Read |
-| create_issue | Create issue | Write |
-| update_issue | Update fields | Write |
-| transition_issue | Change status | Write |
-| add_comment | Add comment | Write |
-| assign_issue | Assign user | Write |
-| log_work | Log time | Write |
-
-### Confluence (14)
-
-| Tool | Description | Mode |
-|------|-------------|------|
-| health_check | Validate connection | Read |
-| get_page | Page by ID | Read |
-| get_page_by_title | Page by title | Read |
-| search_pages | CQL search | Read |
-| search_pages_advanced | Paginated search | Read |
-| list_child_pages | Page tree | Read |
-| get_page_raw | Raw XHTML | Read |
-| get_page_metadata | JSON metadata + labels | Read |
-| get_attachments | Page attachments | Read |
-| get_labels | Page labels | Read |
-| get_page_history | Version history | Read |
-| create_page | Create page | Write |
-| update_page | Update page | Write |
-
----
-
-## Configuration
-
-### Jira
-| Variable | Required | Default |
-|----------|----------|---------|
-| JIRA_BASE_URL | Yes | — |
-| JIRA_PAT | Yes | — |
-| JIRA_EMAIL | Cloud | — |
-| JIRA_PROJECT_KEY | No | — |
-| JIRA_ENABLE_WRITES | No | false |
-| JIRA_ALLOWED_PROJECTS | No | — |
-| JIRA_REQUEST_TIMEOUT | No | 30000 |
-| JIRA_MAX_RESULTS | No | 25 |
-
-### Confluence
-| Variable | Required | Default |
-|----------|----------|---------|
-| CONFLUENCE_BASE_URL | Yes | — |
-| CONFLUENCE_PAT | Yes | — |
-| CONFLUENCE_EMAIL | Cloud | — |
-| CONFLUENCE_ENABLE_WRITES | No | false |
-| CONFLUENCE_REQUEST_TIMEOUT | No | 30000 |
-| CONFLUENCE_MAX_RESULTS | No | 25 |
-
----
-
-## Docker
-
-```bash
-cp docker-compose.example.yml docker-compose.yml
-# Edit with your credentials
-docker compose up --build
-```
-
----
+**Adapters ready:** Microsoft Teams, Slack
 
 ## Security
 
-- Read-only by default
-- No TLS bypass — use NODE_EXTRA_CA_CERTS for corporate certs
-- No embedded credentials
-- Project allowlist (Jira)
-- Safe CQL escaping (Confluence)
-- Request timeouts with AbortController
-- Correlation IDs on every request
-- Non-root Docker containers
-
----
-
-## Supported Platforms
-
-**Works today:** Kiro IDE, VS Code, GitLab Duo, Claude Desktop, Cursor, Windsurf, any MCP client
-
-**Planned:** Website chat, Microsoft Teams, Slack, WhatsApp, Discord, Telegram
-
----
+Read-only default, no TLS bypass, no embedded credentials, project allowlist, safe CQL, correlation IDs, audit trail, non-root Docker.
 
 ## Tests
 
 ```bash
-cd packages/mcp-jira && npm test
-cd packages/mcp-confluence && npm test
+cd packages/mcp-jira && npm test      # 12/12
+cd packages/mcp-confluence && npm test # 12/12
 ```
 
----
+## Deployment
 
-## Troubleshooting
+See [DEPLOYMENT.md](./DEPLOYMENT.md).
 
-| Problem | Solution |
-|---------|----------|
-| "BASE_URL is required" | Set URL in .env or mcp.json |
-| "Authentication failed (401)" | Regenerate token |
-| "Permission denied (403)" | Check API access |
-| "Request timed out" | Check network or increase timeout |
-| SSL errors | Set NODE_EXTRA_CA_CERTS |
-| "Cannot find module" | Run npm install |
+## Team
 
----
-
-## Contributing
-
-See [CONTRIBUTING.md](./CONTRIBUTING.md).
-
-## Licence
-
-Subject to legal approval. See each package's LICENSE file.
+Built by Aryan Jain and team.
