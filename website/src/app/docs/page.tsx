@@ -3,7 +3,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { CopyButton } from "@/components/CopyButton";
 import { ToolCatalogue, type CatalogueTool } from "@/components/ToolCatalogue";
-import { packages } from "@/data/catalog";
+import { packages, platform } from "@/data/catalog";
 import { firstCodeBlockAfter, readRepositoryFile } from "@/lib/repositoryContent";
 
 export default function DocsPage() {
@@ -19,7 +19,7 @@ export default function DocsPage() {
 
   return (
     <>
-      <section className="page-hero"><div className="shell"><span className="eyebrow">Documentation hub</span><h1>From clone to first safe tool call.</h1><p>Repository-backed quick starts, package guides, gateway setup, channel instructions and a searchable 30-tool catalogue.</p></div></section>
+      <section className="page-hero"><div className="shell"><span className="eyebrow">Documentation hub</span><h1>From clone to first safe tool call.</h1><p>Repository-backed quick starts, package guides, gateway setup, channel instructions and a searchable {platform.totalTools}-tool catalogue.</p></div></section>
       <section className="section shell docs-layout">
         <aside className="docs-nav"><strong>On this page</strong><a href="#quick-start">Quick start</a><a href="#packages">Package guides</a><a href="#gateway">Gateway</a><a href="#channels">Channels</a><a href="#tools">Tool catalogue</a></aside>
         <div className="docs-content">

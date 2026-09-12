@@ -291,13 +291,17 @@ button { cursor: pointer; }
 
 .workflow-detail-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
 .workflow-detail-grid > article { background: white; border: 1px solid #d4d5d0; border-radius: 15px; padding: 25px; }
+.workflow-card-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .workflow-number { color: var(--blue); font-weight: 850; }
-.workflow-detail-grid h2 { font-size: 29px; line-height: 1.1; letter-spacing: -.04em; margin: 70px 0 12px; }
+.workflow-detail-grid h2 { font-size: 29px; line-height: 1.1; letter-spacing: -.04em; margin: 48px 0 12px; }
 .workflow-detail-grid p { color: #667085; }
+.workflow-trigger { display: grid; gap: 7px; margin-top: 24px; }
+.workflow-trigger span { color: #667085; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+.workflow-trigger code { color: #252a34; font-family: var(--font-mono), monospace; font-size: 11px; line-height: 1.6; }
 .workflow-detail-grid ol { padding: 0; list-style: none; margin: 30px 0; }
 .workflow-detail-grid li { border-top: 1px solid #e1e3df; padding: 10px 0; font-size: 12px; }
 .workflow-detail-grid li span { color: var(--blue); margin-right: 10px; font-weight: 800; }
-.example-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.example-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
 .example-grid article { background: white; padding: 20px; border-radius: 13px; border: 1px solid #d0d1cc; }
 .example-grid article > div { display: flex; justify-content: space-between; align-items: center; }
 .example-grid blockquote { margin: 45px 0 18px; font-size: 20px; line-height: 1.4; letter-spacing: -.025em; }
