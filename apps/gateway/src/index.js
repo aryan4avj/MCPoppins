@@ -5,16 +5,79 @@ import { createJiraTools } from "./connectors/jira.js";
 import { createConfluenceTools } from "./connectors/confluence.js";
 
 // ---------------------------------------------------------------------------
-// MCP Gateway v2 — Intelligent orchestration, cross-system workflows,
-// conversation memory, audit trail, action previews, suggested actions
+// MCP Gateway v2 — LLM-powered orchestration with keyword fallback
 // ---------------------------------------------------------------------------
 
 const PORT = process.env.PORT || 3000;
 const SECRET = process.env.GATEWAY_SECRET || "";
+const OPENAI_KEY = process.env.OPENAI_API_KEY || "";
+
+// ---------------------------------------------------------------------------
+// LLM Intent Resolution (OpenAI) — falls back to keyword matching
+// ---------------------------------------------------------------------------
+
+async function llmResolveIntent(message, conversationContext) {
+  if (!OPENAI_KEY) return null; // Fall back to keyword matching
+
+  const toolList = Object.entries(tools).map(([n, t]) => `${n}: ${t.description} (${t.mode})`).join("\n");
+
+  try {
+    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${OPENAI_KEY}` },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        temperature: 0,
+        max_tokens: 300,
+        messages: [
+          { role: "system", content: `You are an intent router for MCPoppins, a governed MCP platform connecting Jira and Confluence.
+
+Your job: understand the user's message and return a JSON action.
+
+Available tools:
+${toolList}
+
+Available workflows:
+- project_status: combined Jira issues + Confluence pages overview. Trigger for: project status, sprint status, standup, blockers, what's happening
+- knowledge_action: search Confluence decisions then find related Jira work. Trigger for: decisions, link knowledge to action
+- deep_dive: full investigation of a specific issue with related Confluence pages. Trigger for: investigate, deep dive, full analysis
+- context_followup: use conversation memory to resolve "that", "more", "it". Trigger for: tell me more, expand, elaborate
+- help: show all capabilities
+
+Rules:
+1. If the user mentions a Jira issue key like NAS-1237 or PROJ-123, return: {"action":"tool","tool":"jira_get_issue","params":{"issueKey":"THE_KEY"}}
+2. If the user wants a cross-system view, return: {"action":"workflow","workflow":"project_status"} or the appropriate workflow
+3. If the user wants to search, return: {"action":"tool","tool":"jira_search","params":{"jql":"..."}} or {"action":"tool","tool":"confluence_search","params":{"query":"..."}}
+4. If the user references something from conversation history, return: {"action":"workflow","workflow":"context_followup"}
+5. For direct tool calls, return: {"action":"tool","tool":"tool_name","params":{...}}
+6. If unclear, return: {"action":"workflow","workflow":"help"}
+
+Return ONLY valid JSON. No explanation.` },
+          ...(conversationContext ? [{ role: "user", content: `Recent conversation:\n${conversationContext}` }] : []),
+          { role: "user", content: message }
+        ]
+      })
+    });
+
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    const content = data.choices?.[0]?.message?.content?.trim();
+    if (!content) return null;
+
+    // Parse JSON from response (handle markdown code blocks)
+    const jsonStr = content.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
+    const parsed = JSON.parse(jsonStr);
+    return parsed;
+  } catch (e) {
+    console.error(`[llm] Error: ${e.message}`);
+    return null; // Fall back to keyword matching
+  }
+}
 
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
+app.use(express.static("public"));
 
 // ---------------------------------------------------------------------------
 // Tool Registry
@@ -286,13 +349,37 @@ app.post("/chat", authMw, async (req, res) => {
   addTurn(uid, "user", message);
   const r = { id, channel: channel || "api", userId: uid, message, toolsCalled: [], sources: [], reply: "", suggestions: [], ms: 0, intent: null };
   try {
-    const m = matchIntent(message); r.intent = m ? m.intent : "unrecognized";
-    if (m?.workflow) { const w = await runWorkflow(m.workflow, message, uid); Object.assign(r, { reply: w.reply, toolsCalled: w.toolsCalled, sources: w.sources, suggestions: w.suggestions }); }
-    else if (m?.tool && tools[m.tool]) {
-      const p = {}; if (m.params) Object.assign(p, m.params);
-      else if (m.needsParam) { const q = extractQuery(message); if (m.tool === "jira_search") p.jql = `text ~ "${q}" ORDER BY updated DESC`; else if (m.tool === "jira_get_issue") p.issueKey = q; else if (m.tool === "confluence_search") p.query = q; else if (m.tool === "confluence_get_page") p.pageId = q; }
-      r.reply = await tools[m.tool].handler(p); r.toolsCalled.push(m.tool); r.sources.push({ system: tools[m.tool].connector, status: "ok" }); r.suggestions = suggestActions(r.toolsCalled, r.reply);
-    } else { r.reply = `Try: "show my issues", "project status", "search confluence for [topic]", "PROJ-123", "help"`; r.suggestions = ["Show my issues", "Project status", "Help"]; }
+    const matched = matchIntent(message);
+
+    // Try LLM first, fall back to keyword matching
+    let llmResult = null;
+    if (OPENAI_KEY) {
+      const ctx = getConversation(uid).turns.slice(-4).map(t => `${t.role}: ${t.content.slice(0, 200)}`).join("\n");
+      llmResult = await llmResolveIntent(message, ctx);
+    }
+
+    if (llmResult) {
+      r.intent = llmResult.action === "workflow" ? llmResult.workflow : (llmResult.tool || "llm");
+      if (llmResult.action === "workflow" && llmResult.workflow) {
+        const w = await runWorkflow(llmResult.workflow, message, uid);
+        Object.assign(r, { reply: w.reply, toolsCalled: w.toolsCalled, sources: w.sources, suggestions: w.suggestions });
+      } else if (llmResult.action === "tool" && llmResult.tool && tools[llmResult.tool]) {
+        r.reply = await tools[llmResult.tool].handler(llmResult.params || {});
+        r.toolsCalled.push(llmResult.tool);
+        r.sources.push({ system: tools[llmResult.tool].connector, status: "ok" });
+        r.suggestions = suggestActions(r.toolsCalled, r.reply);
+      } else { llmResult = null; }
+    }
+
+    if (!llmResult) {
+      r.intent = matched ? matched.intent : "unrecognized";
+      if (matched?.workflow) { const w = await runWorkflow(matched.workflow, message, uid); Object.assign(r, { reply: w.reply, toolsCalled: w.toolsCalled, sources: w.sources, suggestions: w.suggestions }); }
+      else if (matched?.tool && tools[matched.tool]) {
+        const p = {}; if (matched.params) Object.assign(p, matched.params);
+        else if (matched.needsParam) { const q = extractQuery(message); if (matched.tool === "jira_search") p.jql = `text ~ "${q}" ORDER BY updated DESC`; else if (matched.tool === "jira_get_issue") p.issueKey = q; else if (matched.tool === "confluence_search") p.query = q; else if (matched.tool === "confluence_get_page") p.pageId = q; }
+        r.reply = await tools[matched.tool].handler(p); r.toolsCalled.push(matched.tool); r.sources.push({ system: tools[matched.tool].connector, status: "ok" }); r.suggestions = suggestActions(r.toolsCalled, r.reply);
+      } else { r.reply = `Try: "show my issues", "project status", "search confluence for [topic]", "PROJ-123", "help"`; r.suggestions = ["Show my issues", "Project status", "Help"]; }
+    }
     addTurn(uid, "assistant", r.reply, r.toolsCalled);
     r.ms = Date.now() - start; audit({ type: "chat", intent: r.intent, tools: r.toolsCalled, channel: r.channel, uid, success: true, ms: r.ms, id }); res.json(r);
   } catch (e) { r.error = e.message; r.ms = Date.now() - start; audit({ type: "chat", intent: r.intent, uid, success: false, error: e.message, ms: r.ms, id }); res.status(500).json(r); }
