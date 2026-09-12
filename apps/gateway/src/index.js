@@ -41,16 +41,22 @@ Available workflows:
 - project_status: combined Jira issues + Confluence pages overview. Trigger for: project status, sprint status, standup, blockers, what's happening
 - knowledge_action: search Confluence decisions then find related Jira work. Trigger for: decisions, link knowledge to action
 - deep_dive: full investigation of a specific issue with related Confluence pages. Trigger for: investigate, deep dive, full analysis
-- context_followup: use conversation memory to resolve "that", "more", "it". Trigger for: tell me more, expand, elaborate
+- context_followup: ONLY use when the user says "tell me more", "expand on that", "more about that" — referring to something already discussed. Do NOT use for new questions.
 - help: show all capabilities
 
-Rules:
+CRITICAL RULES:
 1. If the user mentions a Jira issue key like NAS-1237 or PROJ-123, return: {"action":"tool","tool":"jira_get_issue","params":{"issueKey":"THE_KEY"}}
-2. If the user wants a cross-system view, return: {"action":"workflow","workflow":"project_status"} or the appropriate workflow
-3. If the user wants to search, return: {"action":"tool","tool":"jira_search","params":{"jql":"..."}} or {"action":"tool","tool":"confluence_search","params":{"query":"..."}}
-4. If the user references something from conversation history, return: {"action":"workflow","workflow":"context_followup"}
-5. For direct tool calls, return: {"action":"tool","tool":"tool_name","params":{...}}
-6. If unclear, return: {"action":"workflow","workflow":"help"}
+2. If the user asks about critical/high-priority/urgent/important issues, return: {"action":"tool","tool":"jira_high_priority"}
+3. If the user asks about their issues/tasks/tickets/work/latest issues, return: {"action":"tool","tool":"jira_my_issues"}
+4. If the user asks about overdue/stale/neglected issues, return: {"action":"tool","tool":"jira_overdue"}
+5. If the user asks about sprint/board, return: {"action":"tool","tool":"jira_get_sprint"}
+6. If the user asks who they are, return: {"action":"tool","tool":"jira_whoami"}
+7. If the user wants a cross-system overview, return: {"action":"workflow","workflow":"project_status"}
+8. If the user wants to search Confluence/docs/wiki, return: {"action":"tool","tool":"confluence_search","params":{"query":"..."}}
+9. If the user wants to search Jira, return: {"action":"tool","tool":"jira_search","params":{"jql":"text ~ \\"query\\" ORDER BY updated DESC"}}
+10. ONLY use context_followup when the user explicitly says "tell me more", "expand", "that issue", "more about that" — NOT for new questions
+11. For any new question about priority/issues/pages, use the appropriate direct tool — NEVER context_followup
+12. "latest priority" or "priority issues" means jira_high_priority
 
 Return ONLY valid JSON. No explanation.` },
           ...(conversationContext ? [{ role: "user", content: `Recent conversation:\n${conversationContext}` }] : []),
@@ -153,14 +159,14 @@ function audit(entry) {
 // ---------------------------------------------------------------------------
 
 const intents = [
-  { name: "my_issues", keywords: ["my issues", "my tickets", "assigned to me", "my work", "my tasks", "what am i working on"], tool: "jira_my_issues", category: "jira" },
+  { name: "my_issues", keywords: ["my issues", "my tickets", "assigned to me", "my work", "my tasks", "what am i working on", "fetch my issues", "latest issues", "fetch issues", "fetch me"], tool: "jira_my_issues", category: "jira" },
   { name: "search_issues", keywords: ["search jira", "find issues", "jql", "look for tickets", "find bugs"], tool: "jira_search", category: "jira", needsParam: true },
   { name: "get_issue", keywords: ["issue details", "tell me about", "what is", "status of", "show issue"], tool: "jira_get_issue", category: "jira", needsParam: true },
   { name: "whoami", keywords: ["who am i", "whoami", "my profile", "my identity"], tool: "jira_whoami", category: "jira" },
   { name: "jira_health", keywords: ["jira health", "jira status", "jira connection", "test jira"], tool: "jira_health_check", category: "jira" },
   { name: "comments", keywords: ["comments on", "show comments", "get comments", "what did people say"], tool: "jira_get_comments", category: "jira", needsParam: true },
   { name: "sprint", keywords: ["sprint issues", "active sprint", "current sprint", "sprint board"], tool: "jira_get_sprint", category: "jira" },
-  { name: "high_priority", keywords: ["high priority", "critical issues", "highest priority", "urgent issues", "p1 issues"], tool: "jira_high_priority", category: "jira" },
+  { name: "high_priority", keywords: ["high priority", "critical issues", "highest priority", "urgent issues", "p1 issues", "critical tasks", "important issues", "critical", "priority issues", "latest priority"], tool: "jira_high_priority", category: "jira" },
   { name: "overdue", keywords: ["overdue", "stale issues", "not updated", "neglected", "stuck issues"], tool: "jira_overdue", category: "jira" },
   { name: "search_pages", keywords: ["search confluence", "find pages", "search wiki", "find docs", "search documentation"], tool: "confluence_search", category: "confluence", needsParam: true },
   { name: "get_page", keywords: ["get page", "read page", "show page", "page content"], tool: "confluence_get_page", category: "confluence", needsParam: true },
